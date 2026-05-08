@@ -131,6 +131,25 @@ function switchView(view) {
         renderStudyWord();
     }
     updateStats();
+
+    // Auto close sidebar on mobile after switching view
+    if (window.innerWidth < 1024) {
+        toggleSidebar(false);
+    }
+}
+
+// --- Mobile Sidebar Toggle ---
+function toggleSidebar(show) {
+    const sidebar = document.getElementById('app-sidebar');
+    const overlay = document.getElementById('sidebar-overlay');
+    
+    if (show) {
+        sidebar.classList.remove('-translate-x-full');
+        overlay.classList.remove('opacity-0', 'pointer-events-none');
+    } else {
+        sidebar.classList.add('-translate-x-full');
+        overlay.classList.add('opacity-0', 'pointer-events-none');
+    }
 }
 
 // --- Word Management ---
