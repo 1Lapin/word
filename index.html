@@ -1,0 +1,544 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>背单词神器 - 艾宾浩斯记忆助手</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/cdn.min.js"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+      body {
+        font-family: "Inter", "PingFang SC", "Microsoft YaHei", sans-serif;
+        background-color: #f8fafc;
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.8);
+        backdrop-filter: blur(12px);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+      }
+      .calendar-grid {
+        display: grid;
+        grid-template-columns: repeat(7, 1fr);
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .view-transition {
+        transition: all 0.3s ease-in-out;
+      }
+    </style>
+  </head>
+  <body class="text-slate-800">
+    <!-- Auth Screen -->
+    <div id="auth-screen" class="fixed inset-0 bg-slate-50 z-[100] flex items-center justify-center">
+        <div class="bg-white p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 w-full max-w-md border border-slate-100">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl shadow-indigo-200">
+                    <i data-lucide="book-open" class="text-white w-10 h-10"></i>
+                </div>
+                <h2 class="text-3xl font-bold text-slate-900">欢迎回来</h2>
+                <p class="text-slate-500 mt-2">请登录以同步您的学习进度</p>
+            </div>
+            
+            <div class="space-y-4">
+                <input type="text" id="auth-username" placeholder="账号名称" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">
+                    进入学习空间
+                </button>
+                <p class="text-center text-sm text-slate-400">提示：输入新名称将自动创建账户</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="main-app" class="flex h-screen overflow-hidden hidden">
+        <!-- Sidebar -->
+        <aside class="w-64 glass border-r border-slate-200 flex flex-col">
+            <div class="p-6 flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-indigo-600 flex items-center gap-2">
+                    <i data-lucide="book-open"></i>
+                    <span>记词宝</span>
+                </h1>
+            </div>
+
+            <!-- Profile Section -->
+            <div class="px-6 mb-6">
+                <div class="bg-slate-50 p-4 rounded-3xl border border-slate-100 flex items-center gap-3 relative group">
+                    <div class="w-12 h-12 rounded-2xl bg-indigo-100 overflow-hidden border-2 border-white shadow-sm flex-shrink-0">
+                        <img id="user-avatar" src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix" class="w-full h-full object-cover">
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p id="user-display-name" class="font-bold text-slate-900 truncate">用户名</p>
+                        <p class="text-[10px] text-slate-400">普通会员</p>
+                    </div>
+                    <button onclick="openProfileModal()" class="absolute -right-2 -top-2 bg-white p-1.5 rounded-xl shadow-md border border-slate-100 opacity-0 group-hover:opacity-100 transition-all text-indigo-500 hover:bg-indigo-50">
+                        <i data-lucide="settings" class="w-3.5 h-3.5"></i>
+                    </button>
+                </div>
+            </div>
+
+        <nav class="flex-1 px-4 space-y-2">
+          <button
+            onclick="switchView('add')"
+            class="nav-btn active w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-50 text-slate-600 hover:text-indigo-600"
+            id="btn-add"
+          >
+            <i data-lucide="plus-circle"></i>
+            <span class="font-medium">添加单词</span>
+          </button>
+          <button
+            onclick="switchView('list')"
+            class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-50 text-slate-600 hover:text-indigo-600"
+            id="btn-list"
+          >
+            <i data-lucide="list"></i>
+            <span class="font-medium">单词列表</span>
+          </button>
+          <button onclick="switchView('calendar')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-50 text-slate-600 hover:text-indigo-600" id="btn-calendar">
+                    <i data-lucide="calendar"></i>
+                    <span class="font-medium">复习日历</span>
+                </button>
+                <button onclick="switchView('study')" class="nav-btn w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all hover:bg-indigo-50 text-slate-600 hover:text-indigo-600" id="btn-study">
+                    <i data-lucide="graduation-cap"></i>
+                    <span class="font-medium">自主背诵</span>
+                </button>
+            </nav>
+
+        <div class="p-4 border-t border-slate-100">
+                <!-- Next Review Reminder -->
+                <div id="next-review-reminder" class="mb-4 px-4 py-3 bg-amber-50 border border-amber-100 rounded-2xl hidden">
+                    <div class="flex items-center gap-2 text-amber-600 mb-1">
+                        <i data-lucide="bell" class="w-4 h-4"></i>
+                        <span class="text-xs font-bold uppercase tracking-wider">复习提醒</span>
+                    </div>
+                    <p id="next-review-time-text" class="text-sm text-amber-800 font-medium">加载中...</p>
+                </div>
+
+                <div class="bg-indigo-600 text-white p-4 rounded-2xl shadow-lg shadow-indigo-200">
+                    <p class="text-xs opacity-80 mb-1">今日复习</p>
+                    <p class="text-xl font-bold" id="today-count">0 单词</p>
+                    <button onclick="startReview()" class="mt-3 w-full bg-white text-indigo-600 py-2 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors">
+                        立即开始
+                    </button>
+                </div>
+            </div>
+      </aside>
+
+      <!-- Main Content -->
+      <main class="flex-1 overflow-y-auto bg-slate-50 relative">
+        <!-- Add Word View -->
+        <div id="view-add" class="view p-8 max-w-4xl mx-auto">
+          <header class="mb-8">
+            <h2 class="text-3xl font-bold text-slate-900">添加新单词</h2>
+            <p class="text-slate-500 mt-2">
+              输入你想背诵的单词，我们将为你安排科学的复习计划。
+            </p>
+          </header>
+
+          <div
+            class="bg-white p-8 rounded-3xl shadow-sm border border-slate-100"
+          >
+            <div class="space-y-6">
+              <div>
+                <label class="block text-sm font-semibold text-slate-700 mb-2"
+                  >英语单词</label
+                >
+                <div class="relative">
+                  <input
+                    type="text"
+                    id="input-word"
+                    placeholder="例如: Perseverance"
+                    class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all text-lg font-medium"
+                  />
+                  <button
+                    onclick="translateWord()"
+                    class="absolute right-3 top-3 bg-indigo-100 text-indigo-600 p-2 rounded-xl hover:bg-indigo-200 transition-colors"
+                    title="自动翻译"
+                  >
+                    <i data-lucide="languages" class="w-5 h-5"></i>
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <div class="flex justify-between items-center mb-2">
+                  <label class="block text-sm font-semibold text-slate-700">中文翻译</label>
+                  <div class="flex gap-2">
+                    <a id="link-youdao" href="#" target="_blank" class="text-xs text-indigo-500 hover:underline flex items-center gap-1 hidden">
+                      <i data-lucide="external-link" class="w-3 h-3"></i>有道词典
+                    </a>
+                    <a id="link-collins" href="#" target="_blank" class="text-xs text-indigo-500 hover:underline flex items-center gap-1 hidden">
+                      <i data-lucide="external-link" class="w-3 h-3"></i>柯林斯
+                    </a>
+                  </div>
+                </div>
+                <textarea
+                  id="input-translation"
+                  rows="3"
+                  placeholder="翻译将自动显示在此处..."
+                  class="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+                ></textarea>
+                <p class="text-[10px] text-slate-400 mt-2">提示：自动翻译仅供参考，建议根据四级大纲进行微调。</p>
+              </div>
+
+              <button
+                onclick="addWord()"
+                class="w-full bg-indigo-600 text-white py-4 rounded-2xl text-lg font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all flex items-center justify-center gap-2"
+              >
+                <i data-lucide="plus"></i>
+                加入背诵计划
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- List View -->
+        <div id="view-list" class="view hidden p-8 max-w-5xl mx-auto">
+          <header class="flex justify-between items-center mb-8">
+            <div>
+              <h2 class="text-3xl font-bold text-slate-900">单词表</h2>
+              <p class="text-slate-500 mt-2">查看并管理你所有的词汇。</p>
+            </div>
+            <div class="flex gap-3">
+              <div class="relative">
+                <i
+                  data-lucide="search"
+                  class="absolute left-3 top-3 w-5 h-5 text-slate-400"
+                ></i>
+                <input
+                  type="text"
+                  id="search-word"
+                  placeholder="搜索单词..."
+                  class="pl-10 pr-4 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+            </div>
+          </header>
+
+          <div
+            class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden"
+          >
+            <table class="w-full text-left">
+              <thead class="bg-slate-50 border-b border-slate-100">
+                <tr>
+                  <th class="px-6 py-4 font-semibold text-slate-600">单词</th>
+                  <th class="px-6 py-4 font-semibold text-slate-600">翻译</th>
+                  <th class="px-6 py-4 font-semibold text-slate-600">
+                    加入时间
+                  </th>
+                  <th class="px-6 py-4 font-semibold text-slate-600">
+                    复习进度
+                  </th>
+                  <th class="px-6 py-4 font-semibold text-slate-600 text-right">
+                    操作
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="word-table-body">
+                <!-- Words will be injected here -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Study View -->
+        <div id="view-study" class="view hidden p-8 h-full flex flex-col max-w-5xl mx-auto">
+          <header class="flex justify-between items-end mb-8">
+            <div>
+              <h2 class="text-3xl font-bold text-slate-900">自主背诵</h2>
+              <p class="text-slate-500 mt-2">不受曲线限制，自由浏览或开始练习模式。</p>
+            </div>
+            <div class="flex gap-2 bg-slate-100 p-1 rounded-2xl">
+              <button onclick="setStudyTab('browse')" id="tab-browse" class="px-6 py-2 rounded-xl text-sm font-bold transition-all bg-white text-indigo-600 shadow-sm">词卡浏览</button>
+              <button onclick="setStudyTab('quiz')" id="tab-quiz" class="px-6 py-2 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-700">模式练习</button>
+            </div>
+          </header>
+
+          <!-- Browse Tab -->
+          <div id="study-browse-content" class="flex-1 flex flex-col items-center justify-center bg-white rounded-3xl border border-slate-100 p-12 relative">
+            <div id="study-card" class="w-full max-w-md text-center">
+              <h3 id="study-word-text" class="text-6xl font-bold text-slate-900 mb-6">Word</h3>
+              
+              <div class="relative h-24 mb-12 flex items-center justify-center">
+                <button id="btn-study-show-translation" onclick="toggleStudyTranslation()" class="absolute inset-0 w-full py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all z-10">
+                  查看翻译
+                </button>
+                <div id="study-translation-container" class="hidden text-2xl text-slate-500 font-medium animate-in fade-in zoom-in duration-300">
+                  <p id="study-word-translation">翻译内容</p>
+                </div>
+              </div>
+              
+              <div class="grid grid-cols-2 gap-4">
+                <button onclick="prevStudyWord()" class="py-4 border-2 border-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-50 transition-all flex items-center justify-center gap-2">
+                  <i data-lucide="chevron-left"></i> 上一个
+                </button>
+                <button onclick="nextStudyWord()" class="py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200 flex items-center justify-center gap-2">
+                  下一个 <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+            </div>
+            <div class="absolute bottom-8 text-slate-400 font-medium" id="study-progress">1 / 10</div>
+          </div>
+
+          <!-- Quiz Mode Selection Tab -->
+          <div id="study-quiz-content" class="hidden flex-1 bg-white rounded-3xl border border-slate-100 p-8">
+            <div class="max-w-xl mx-auto py-12">
+              <h3 class="text-2xl font-bold text-slate-900 mb-8 text-center">选择练习模式</h3>
+              <div class="grid gap-4">
+                <button onclick="startFreeQuiz('en-zh')" class="flex items-center gap-4 p-6 rounded-2xl border-2 border-slate-50 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group">
+                  <div class="w-14 h-14 rounded-2xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
+                    <i data-lucide="languages" class="w-7 h-7"></i>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-slate-800">英译中练习</div>
+                    <div class="text-sm text-slate-500">从四个中文翻译中选出正确的一个</div>
+                  </div>
+                </button>
+                <button onclick="startFreeQuiz('zh-en')" class="flex items-center gap-4 p-6 rounded-2xl border-2 border-slate-50 hover:border-amber-500 hover:bg-amber-50 transition-all text-left group">
+                  <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-all">
+                    <i data-lucide="type" class="w-7 h-7"></i>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-slate-800">中译英练习</div>
+                    <div class="text-sm text-slate-500">从四个英文单词中选出正确的一个</div>
+                  </div>
+                </button>
+                <button onclick="startFreeQuiz('spell')" class="flex items-center gap-4 p-6 rounded-2xl border-2 border-slate-50 hover:border-emerald-500 hover:bg-emerald-50 transition-all text-left group">
+                  <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-all">
+                    <i data-lucide="keyboard" class="w-7 h-7"></i>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-slate-800">单词拼写练习</div>
+                    <div class="text-sm text-slate-500">根据中文含义拼写出正确的英文单词</div>
+                  </div>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Calendar View -->
+        <div id="view-calendar" class="view hidden p-8 h-full flex flex-col">
+          <header class="flex justify-between items-center mb-6">
+            <div>
+              <h2 class="text-3xl font-bold text-slate-900">复习日历</h2>
+              <p class="text-slate-500 mt-1" id="calendar-subtitle">
+                追踪你的记忆轨迹
+              </p>
+            </div>
+            <div
+              class="flex items-center gap-4 bg-white p-1 rounded-2xl shadow-sm border border-slate-100"
+            >
+              <button
+                onclick="setCalendarMode('year')"
+                class="calendar-mode-btn px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                id="mode-year"
+              >
+                年
+              </button>
+              <button
+                onclick="setCalendarMode('month')"
+                class="calendar-mode-btn active px-4 py-2 bg-indigo-600 text-white rounded-xl text-sm font-medium transition-all"
+                id="mode-month"
+              >
+                月
+              </button>
+              <button
+                onclick="setCalendarMode('day')"
+                class="calendar-mode-btn px-4 py-2 rounded-xl text-sm font-medium transition-all"
+                id="mode-day"
+              >
+                日
+              </button>
+            </div>
+          </header>
+
+          <div
+            class="flex-1 bg-white rounded-3xl shadow-sm border border-slate-100 flex flex-col overflow-hidden"
+          >
+            <div
+              class="p-4 border-b border-slate-100 flex justify-between items-center"
+            >
+              <h3
+                class="text-xl font-bold text-slate-800"
+                id="current-period-label"
+              >
+                2024年5月
+              </h3>
+              <div class="flex gap-2">
+                <button
+                  onclick="prevPeriod()"
+                  class="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <i data-lucide="chevron-left"></i>
+                </button>
+                <button
+                  onclick="todayPeriod()"
+                  class="px-4 py-2 text-sm font-medium hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  今天
+                </button>
+                <button
+                  onclick="nextPeriod()"
+                  class="p-2 hover:bg-slate-100 rounded-xl transition-colors"
+                >
+                  <i data-lucide="chevron-right"></i>
+                </button>
+              </div>
+            </div>
+
+            <div
+              id="calendar-content"
+              class="flex-1 overflow-auto p-4 scrollbar-hide"
+            >
+              <!-- Calendar grid will be injected here -->
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Notification -->
+    <div
+      id="notification"
+      class="fixed bottom-8 right-8 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none"
+    >
+      <div
+        class="bg-slate-900 text-white px-6 py-4 rounded-2xl shadow-2xl flex items-center gap-3"
+      >
+        <i id="notif-icon" data-lucide="info" class="w-5 h-5"></i>
+        <span id="notif-message" class="font-medium"></span>
+      </div>
+    </div>
+
+    <!-- Review Modal -->
+    <div id="review-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <!-- Mode Selection Screen -->
+        <div id="mode-selection" class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 transform scale-95 transition-all duration-300">
+            <h3 class="text-2xl font-bold text-slate-900 mb-6 text-center">选择复习模式</h3>
+            <div class="grid gap-4">
+                <button onclick="selectReviewMode('en-zh')" class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group">
+                    <div class="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-600 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-colors">
+                        <i data-lucide="languages"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800">看英文选中文</div>
+                        <div class="text-sm text-slate-500">根据英文单词选择正确的翻译</div>
+                    </div>
+                </button>
+                <button onclick="selectReviewMode('zh-en')" class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group">
+                    <div class="w-12 h-12 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                        <i data-lucide="type"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800">看中文选英文</div>
+                        <div class="text-sm text-slate-500">根据中文翻译选择正确的英文</div>
+                    </div>
+                </button>
+                <button onclick="selectReviewMode('spell')" class="flex items-center gap-4 p-4 rounded-2xl border border-slate-100 hover:border-indigo-500 hover:bg-indigo-50 transition-all text-left group">
+                    <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors">
+                        <i data-lucide="keyboard"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-slate-800">看中文拼写英文</div>
+                        <div class="text-sm text-slate-500">根据中文翻译拼写出完整的英文</div>
+                    </div>
+                </button>
+            </div>
+            <button onclick="closeReview()" class="w-full mt-6 py-3 text-slate-400 font-medium hover:text-slate-600 transition-colors">以后再说</button>
+        </div>
+
+        <!-- Quiz Screen -->
+        <div id="quiz-screen" class="hidden bg-white w-full max-w-lg rounded-3xl shadow-2xl overflow-hidden transform scale-95 transition-all duration-300">
+            <div class="p-8 text-center">
+                <div class="mb-6 flex justify-between items-center">
+                    <span class="px-3 py-1 bg-indigo-100 text-indigo-600 rounded-full text-xs font-bold" id="quiz-mode-tag">模式</span>
+                    <span class="text-slate-400 text-xs font-bold" id="quiz-progress">1 / 10</span>
+                </div>
+                
+                <h3 class="text-4xl font-bold text-slate-900 mb-8" id="quiz-question-text">Question</h3>
+
+                <!-- Multiple Choice Container -->
+                <div id="choice-container" class="grid gap-3 hidden">
+                    <!-- Choices will be injected here -->
+                </div>
+
+                <!-- Spelling Container -->
+                <div id="spelling-container" class="hidden space-y-4">
+                    <input type="text" id="spell-input" autocomplete="off" autofocus
+                        class="w-full px-5 py-4 bg-slate-50 border-2 border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-center text-2xl font-bold tracking-wider uppercase"
+                        placeholder="TYPE HERE">
+                    <button onclick="checkSpelling()" class="w-full py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200">
+                        确认提交
+                    </button>
+                </div>
+
+                <!-- Feedback Container -->
+                <div id="feedback-container" class="hidden mt-8 p-4 rounded-2xl">
+                    <div id="feedback-status" class="text-xl font-bold mb-2">正确!</div>
+                    <div id="feedback-correct-answer" class="text-slate-500">正确答案: <span class="font-bold text-slate-800">word</span></div>
+                    <button onclick="nextQuestion()" class="mt-6 w-full py-3 bg-slate-900 text-white rounded-xl font-bold hover:bg-slate-800 transition-all">
+                        继续下一个
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-slate-50 p-4 border-t border-slate-100 flex justify-between items-center">
+                <button onclick="closeReview()" class="text-slate-400 hover:text-slate-600 font-medium text-sm">结束复习</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+
+    <!-- Edit Modal -->
+    <div id="edit-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 transform scale-95 transition-all duration-300">
+            <h3 class="text-2xl font-bold text-slate-900 mb-6">编辑单词</h3>
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">英语单词</label>
+                    <input type="text" id="edit-input-word" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">中文翻译</label>
+                    <textarea id="edit-input-translation" rows="3" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500"></textarea>
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-8">
+                <button onclick="closeEditModal()" class="py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200">取消</button>
+                <button onclick="saveEdit()" class="py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700">保存修改</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div id="profile-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-8 transform scale-95 transition-all duration-300">
+            <h3 class="text-2xl font-bold text-slate-900 mb-6">编辑资料</h3>
+            <div class="space-y-6">
+                <div class="flex flex-col items-center gap-4">
+                    <div class="w-24 h-24 rounded-3xl bg-indigo-100 overflow-hidden border-4 border-slate-50 shadow-lg">
+                        <img id="edit-avatar-preview" src="" class="w-full h-full object-cover">
+                    </div>
+                    <div class="grid grid-cols-4 gap-2">
+                        <!-- Avatar options will be injected here -->
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">显示名称</label>
+                    <input type="text" id="edit-profile-name" class="w-full px-5 py-3 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+            </div>
+            <div class="grid grid-cols-2 gap-4 mt-8">
+                <button onclick="closeProfileModal()" class="py-3 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200">取消</button>
+                <button onclick="saveProfile()" class="py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700">保存资料</button>
+            </div>
+            <button onclick="handleLogout()" class="w-full mt-4 py-3 text-rose-500 font-bold hover:bg-rose-50 rounded-2xl transition-all flex items-center justify-center gap-2">
+                <i data-lucide="log-out"></i> 退出登录
+            </button>
+        </div>
+    </div>
+</body>
+</html>
