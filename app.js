@@ -730,11 +730,11 @@ function renderMonthView(container, date) {
         );
 
         grid.innerHTML += `
-            <div onclick="calendarDate = new Date(${day.getTime()}); setCalendarMode('day')" class="min-h-[100px] p-2 rounded-2xl border cursor-pointer hover:border-indigo-200 transition-all ${isCurrentMonth ? 'bg-white border-slate-100' : 'bg-slate-50 border-transparent opacity-40'} ${isToday ? 'ring-2 ring-indigo-500' : ''}">
-                <div class="text-sm font-semibold mb-1">${df.format(day, 'd')}</div>
-                <div class="space-y-1">
-                    ${dayWords.slice(0, 3).map(w => `<div class="text-[10px] px-1.5 py-0.5 bg-indigo-50 text-indigo-600 rounded-md truncate">${w.text}</div>`).join('')}
-                    ${dayWords.length > 3 ? `<div class="text-[10px] text-slate-400 pl-1">+${dayWords.length - 3} 更多</div>` : ''}
+            <div onclick="calendarDate = new Date(${day.getTime()}); setCalendarMode('day')" class="min-h-[80px] md:min-h-[100px] p-1 md:p-2 rounded-xl md:rounded-2xl border cursor-pointer hover:border-indigo-200 transition-all ${isCurrentMonth ? 'bg-white border-slate-100' : 'bg-slate-50 border-transparent opacity-40'} ${isToday ? 'ring-2 ring-indigo-500' : ''}">
+                <div class="text-xs md:text-sm font-semibold mb-1">${df.format(day, 'd')}</div>
+                <div class="space-y-1 overflow-hidden">
+                    ${dayWords.slice(0, 2).map(w => `<div class="text-[8px] md:text-[10px] px-1 py-0.5 bg-indigo-50 text-indigo-600 rounded-md truncate">${w.text}</div>`).join('')}
+                    ${dayWords.length > 2 ? `<div class="text-[8px] md:text-[10px] text-slate-400 pl-1">+${dayWords.length - 2}</div>` : ''}
                 </div>
             </div>
         `;
