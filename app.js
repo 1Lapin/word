@@ -911,7 +911,11 @@ window.onload = () => {
     document.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
             const feedbackContainer = document.getElementById('feedback-container');
+            const quizScreen = document.getElementById('quiz-screen');
+            
+            // Check if the feedback container is visible (works for both normal review and free study quiz)
             if (feedbackContainer && !feedbackContainer.classList.contains('hidden')) {
+                e.preventDefault();
                 nextQuestion();
             }
         }
