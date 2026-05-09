@@ -195,8 +195,10 @@ async function translateWord() {
 }
 
 function addWord() {
-    const wordText = document.getElementById('input-word').value.trim().toLowerCase();
-    const translation = document.getElementById('input-translation').value.trim();
+    const wordInput = document.getElementById('input-word');
+    const translationInput = document.getElementById('input-translation');
+    const wordText = wordInput.value.trim().toLowerCase();
+    const translation = translationInput.value.trim();
 
     if (!wordText || !translation) {
         showNotification('请填写完整信息', 'alert-circle');
@@ -214,7 +216,7 @@ function addWord() {
         text: wordText,
         translation: translation,
         createdAt: now,
-        familiar: false, // New field
+        familiar: false,
         reviews: EBBINGHAUS_INTERVALS.map(interval => ({
             scheduledAt: now + interval,
             completed: false
@@ -225,8 +227,10 @@ function addWord() {
     words.push(newWord);
     saveUserData();
     
-    document.getElementById('input-word').value = '';
-    document.getElementById('input-translation').value = '';
+    // Reset form and focus back to first field
+    wordInput.value = '';
+    translationInput.value = '';
+    wordInput.focus();
     
     showNotification('单词已加入背诵计划！', 'check-circle');
     updateStats();
@@ -828,6 +832,27 @@ window.onload = () => {
         handleLogin();
     }
     
+    // Add Keyboard Listeners for adding words
+    const wordInput = document.getElementById('input-word');
+    const translationInput = document.getElementById('input-translation');
+
+    if (wordInput && translationInput) {
+        wordInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                translateWord();
+                translationInput.focus();
+            }
+        });
+
+        translationInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                addWord();
+            }
+        });
+    }
+
     // Start periodic update for reminder
     setInterval(() => {
         if (currentUser) updateStats();
