@@ -153,45 +153,25 @@ function toggleSidebar(show) {
 }
 
 // --- Word Management ---
-async function translateWord() {
-    const wordInput = document.getElementById('input-word');
-    const translationArea = document.getElementById('input-translation');
+function updateExternalLinks(word) {
     const youdaoLink = document.getElementById('link-youdao');
     const collinsLink = document.getElementById('link-collins');
+    if (!word) return;
     
-    let word = wordInput.value.trim();
-    if (!word) {
-        showNotification('请输入单词', 'alert-circle');
-        return;
-    }
-
-    word = word.toLowerCase();
-    wordInput.value = word;
-
     youdaoLink.href = `https://www.youdao.com/w/eng/${word}`;
     youdaoLink.classList.remove('hidden');
     collinsLink.href = `https://www.collinsdictionary.com/dictionary/english-chinese/${word}`;
     collinsLink.classList.remove('hidden');
+}
 
-    translationArea.placeholder = '正在为您匹配四级释义...';
+async function translateWord() {
+    // This function is now only used to update links, API call removed as requested
+    const wordInput = document.getElementById('input-word');
+    let word = wordInput.value.trim().toLowerCase();
+    if (!word) return;
     
-    try {
-        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh-CN&mt=1`);
-        const data = await res.json();
-        
-        if (data.responseData && data.responseData.translatedText) {
-            let translated = data.responseData.translatedText;
-            translated = translated.replace(/[a-zA-Z]/g, '').trim();
-            translationArea.value = translated;
-            showNotification('翻译已更新', 'languages');
-        } else {
-            showNotification('翻译失败，请使用外部链接参考', 'alert-circle');
-        }
-    } catch (err) {
-        showNotification('网络错误，请手动查词', 'wifi-off');
-    } finally {
-        translationArea.placeholder = '翻译将自动显示在此处...';
-    }
+    wordInput.value = word;
+    updateExternalLinks(word);
 }
 
 function addWord() {
@@ -259,8 +239,25 @@ function openEditModal(id) {
     if (!word) return;
     
     editingWordId = id;
-    document.getElementById('edit-input-word').value = word.text;
-    document.getElementById('edit-input-translation').value = word.translation;
+    const wordInput = document.getElementById('edit-input-word');
+    const translationInput = document.getElementById('edit-input-translation');
+    
+    wordInput.value = word.text;
+    translationInput.value = word.translation;
+
+    // Add Keyboard Listeners for editing
+    wordInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            translationInput.focus();
+        }
+    };
+    translationInput.onkeydown = (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            saveEdit();
+        }
+    };
     
     const modal = document.getElementById('edit-modal');
     modal.classList.remove('opacity-0', 'pointer-events-none');
@@ -857,4 +854,14 @@ window.onload = () => {
     setInterval(() => {
         if (currentUser) updateStats();
     }, 60000);
+
+    // Global Review Keyboard Listener
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            const feedbackContainer = document.getElementById('feedback-container');
+            if (feedbackContainer && !feedbackContainer.classList.contains('hidden')) {
+                nextQuestion();
+            }
+        }
+    });
 };
