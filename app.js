@@ -176,37 +176,6 @@ async function translateWord() {
     translationInput.focus();
 }
 
-async function handleAutoTranslate() {
-    const wordInput = document.getElementById('input-word');
-    const translationArea = document.getElementById('input-translation');
-    let word = wordInput.value.trim().toLowerCase();
-    
-    if (!word) {
-        showNotification('请输入单词', 'alert-circle');
-        return;
-    }
-
-    translationArea.placeholder = '正在获取翻译...';
-    
-    try {
-        const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(word)}&langpair=en|zh-CN&mt=1`);
-        const data = await res.json();
-        
-        if (data.responseData && data.responseData.translatedText) {
-            let translated = data.responseData.translatedText;
-            translated = translated.replace(/[a-zA-Z]/g, '').trim();
-            translationArea.value = translated;
-            showNotification('翻译已更新', 'languages');
-        } else {
-            showNotification('自动翻译失败，请参考外部词典', 'alert-circle');
-        }
-    } catch (err) {
-        showNotification('网络错误', 'wifi-off');
-    } finally {
-        translationArea.placeholder = '请参考上方词典链接，手动输入中文释义...';
-    }
-}
-
 function addWord() {
     const wordInput = document.getElementById('input-word');
     const translationInput = document.getElementById('input-translation');
