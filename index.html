@@ -53,7 +53,7 @@
     </div>
 
     <div id="main-app" class="flex w-full h-screen overflow-hidden hidden relative">
-        <!-- Mobile Header -->
+        <!-- Mobile Header (Visible only on small screens) -->
         <header class="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-100 flex items-center justify-between px-6 z-40">
             <h1 class="text-xl font-bold text-indigo-600 flex items-center gap-2">
                 <i data-lucide="book-open" class="w-6 h-6"></i>
@@ -64,10 +64,10 @@
             </button>
         </header>
 
-        <!-- Sidebar Overlay (Mobile) -->
+        <!-- Sidebar Overlay (Mobile/Narrow screens) -->
         <div id="sidebar-overlay" onclick="toggleSidebar(false)" class="lg:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 opacity-0 pointer-events-none transition-all duration-300"></div>
 
-        <!-- Sidebar -->
+        <!-- Sidebar (Visible on LG screens, Hidden on small screens) -->
         <aside id="app-sidebar" class="fixed lg:static inset-y-0 left-0 w-64 glass border-r border-slate-200 flex flex-col z-50 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 ease-in-out shrink-0">
             <div class="p-6 flex items-center justify-between">
                 <h1 class="text-2xl font-bold text-indigo-600 flex items-center gap-2">
