@@ -165,7 +165,7 @@ function updateExternalLinks(word) {
 }
 
 async function translateWord() {
-    // This function is now only used to update links, API call removed as requested
+    // This function now ONLY updates links, no API calls, no translation display
     const wordInput = document.getElementById('input-word');
     let word = wordInput.value.trim().toLowerCase();
     if (!word) return;
