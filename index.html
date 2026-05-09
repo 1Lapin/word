@@ -33,45 +33,21 @@
   <body class="text-slate-800">
     <!-- Auth Screen -->
     <div id="auth-screen" class="fixed inset-0 bg-slate-50 z-[100] flex items-center justify-center p-4">
-        <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 w-full max-w-md border border-slate-100 overflow-y-auto max-h-[90vh]">
+        <div class="bg-white p-8 md:p-10 rounded-[2.5rem] shadow-2xl shadow-indigo-100 w-full max-w-md border border-slate-100">
             <div class="text-center mb-8">
                 <div class="w-16 h-16 bg-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-200">
                     <i data-lucide="book-open" class="text-white w-8 h-8"></i>
                 </div>
-                <h2 class="text-2xl font-bold text-slate-900" id="auth-title">欢迎回来</h2>
-                <p class="text-slate-500 text-sm mt-1" id="auth-subtitle">请登录以同步您的学习进度</p>
-            </div>
-
-            <!-- Auth Tabs -->
-            <div class="flex bg-slate-100 p-1 rounded-2xl mb-6">
-                <button onclick="switchAuthTab('login')" id="tab-login" class="flex-1 py-2 rounded-xl text-sm font-bold transition-all bg-white text-indigo-600 shadow-sm">登录</button>
-                <button onclick="switchAuthTab('register')" id="tab-register" class="flex-1 py-2 rounded-xl text-sm font-bold transition-all text-slate-500">注册</button>
+                <h2 class="text-2xl font-bold text-slate-900">欢迎回来</h2>
+                <p class="text-slate-500 text-sm mt-1">请输入您的账号名称以进入学习空间</p>
             </div>
             
             <div class="space-y-4">
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-400 ml-2 uppercase">手机号 / 邮箱</label>
-                    <input type="text" id="auth-identifier" placeholder="请输入手机号或邮箱" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-400 ml-2 uppercase">密码 (4-11位)</label>
-                    <input type="password" id="auth-password" placeholder="请输入密码" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                </div>
-
-                <div class="space-y-1">
-                    <label class="text-xs font-bold text-slate-400 ml-2 uppercase">验证码</label>
-                    <div class="flex gap-2">
-                        <input type="text" id="auth-code" placeholder="验证码" class="flex-1 px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
-                        <button onclick="sendVerificationCode()" id="btn-send-code" class="px-4 bg-indigo-50 text-indigo-600 rounded-2xl font-bold text-sm hover:bg-indigo-100 transition-all whitespace-nowrap">
-                            获取验证码
-                        </button>
-                    </div>
-                </div>
-
-                <button onclick="handleAuthSubmit()" id="btn-auth-submit" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all mt-4">
+                <input type="text" id="auth-username" placeholder="账号名称" class="w-full px-6 py-4 bg-slate-50 border border-slate-100 rounded-2xl focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                <button onclick="handleLogin()" class="w-full bg-indigo-600 text-white py-4 rounded-2xl font-bold hover:bg-indigo-700 shadow-lg shadow-indigo-200 transition-all">
                     进入学习空间
                 </button>
+                <p class="text-center text-xs text-slate-400">提示：输入新名称将自动为您创建账户空间</p>
             </div>
         </div>
     </div>

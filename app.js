@@ -14,8 +14,6 @@ const EBBINGHAUS_INTERVALS = [
 let currentUser = null;
 let words = [];
 let currentView = 'add';
-let authMode = 'login'; // 'login', 'register'
-let generatedCode = null;
 let calendarMode = 'month'; // 'year', 'month', 'day'
 let calendarDate = new Date();
 let reviewQueue = [];
@@ -30,113 +28,28 @@ let selectedChoiceIndex = -1; // 记录当前选中的选项索引
 lucide.createIcons();
 
 // --- Auth Management ---
-function switchAuthTab(mode) {
-    authMode = mode;
-    const tabLogin = document.getElementById('tab-login');
-    const tabRegister = document.getElementById('tab-register');
-    const title = document.getElementById('auth-title');
-    const subtitle = document.getElementById('auth-subtitle');
-    const btnSubmit = document.getElementById('btn-auth-submit');
-
-    if (mode === 'login') {
-        tabLogin.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabLogin.classList.remove('text-slate-500');
-        tabRegister.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabRegister.classList.add('text-slate-500');
-        title.innerText = '欢迎回来';
-        subtitle.innerText = '请登录以同步您的学习进度';
-        btnSubmit.innerText = '进入学习空间';
-    } else {
-        tabRegister.classList.add('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabRegister.classList.remove('text-slate-500');
-        tabLogin.classList.remove('bg-white', 'text-indigo-600', 'shadow-sm');
-        tabLogin.classList.add('text-slate-500');
-        title.innerText = '创建账号';
-        subtitle.innerText = '加入记词宝，开启科学背词之旅';
-        btnSubmit.innerText = '立即注册';
-    }
-}
-
-function sendVerificationCode() {
-    const identifier = document.getElementById('auth-identifier').value.trim();
-    if (!identifier) {
-        showNotification('请先输入手机号或邮箱', 'alert-circle');
+function handleLogin() {
+    const username = document.getElementById('auth-username').value.trim();
+    if (!username) {
+        showNotification('请输入名称', 'alert-circle');
         return;
     }
 
-    // Generate 4-digit code
-    generatedCode = Math.floor(1000 + Math.random() * 9000).toString();
-    
-    // Simulate sending (pure frontend can't send real SMS/Email)
-    showNotification(`验证码已发送: ${generatedCode}`, 'bell');
-    
-    const btn = document.getElementById('btn-send-code');
-    let timeLeft = 60;
-    btn.disabled = true;
-    
-    const timer = setInterval(() => {
-        btn.innerText = `${timeLeft}s`;
-        timeLeft--;
-        if (timeLeft < 0) {
-            clearInterval(timer);
-            btn.disabled = false;
-            btn.innerText = '重新获取';
-        }
-    }, 1000);
-}
-
-function handleAuthSubmit() {
-    const identifier = document.getElementById('auth-identifier').value.trim();
-    const password = document.getElementById('auth-password').value.trim();
-    const code = document.getElementById('auth-code').value.trim();
-
-    if (!identifier || !password || !code) {
-        showNotification('请填写完整信息', 'alert-circle');
-        return;
-    }
-
-    if (password.length < 4 || password.length > 11) {
-        showNotification('密码长度必须在4-11位之间', 'alert-triangle');
-        return;
-    }
-
-    if (code !== generatedCode) {
-        showNotification('验证码不正确', 'x-circle');
-        return;
-    }
-
-    if (authMode === 'register') {
-        if (localStorage.getItem(`user_${identifier}`)) {
-            showNotification('该账号已存在，请直接登录', 'alert-circle');
-            switchAuthTab('login');
-            return;
-        }
-
-        const newUser = {
-            username: identifier,
-            displayName: identifier.split('@')[0], // Use part before @ as name if email
-            password: password, // In a real app, this should be hashed
-            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${identifier}`,
-            words: []
-        };
-
-        localStorage.setItem(`user_${identifier}`, JSON.stringify(newUser));
-        showNotification('注册成功！', 'check-circle');
-    }
-
-    // Login Logic
-    const userData = JSON.parse(localStorage.getItem(`user_${identifier}`));
-    if (!userData || userData.password !== password) {
-        showNotification('账号或密码错误', 'x-circle');
-        return;
-    }
+    const userData = JSON.parse(localStorage.getItem(`user_${username}`)) || {
+        username: username,
+        displayName: username,
+        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+        words: []
+    };
 
     currentUser = userData;
     words = userData.words;
     
-    localStorage.setItem('current_user_session', identifier);
+    // Save current user to session
+    localStorage.setItem('current_user_session', username);
+    localStorage.setItem(`user_${username}`, JSON.stringify(currentUser));
+
     updateProfileUI();
-    
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('main-app').classList.remove('hidden');
     
