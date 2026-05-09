@@ -165,15 +165,64 @@ function updateExternalLinks(word) {
 }
 
 async function translateWord() {
-    // This function now ONLY updates links and jumps, no API calls
+    // This function now updates links, jumps, and checks spelling
     const wordInput = document.getElementById('input-word');
     const translationInput = document.getElementById('input-translation');
+    const suggestionBox = document.getElementById('spell-suggestion-box');
     let word = wordInput.value.trim().toLowerCase();
-    if (!word) return;
+    
+    if (!word) {
+        suggestionBox.classList.add('hidden');
+        return;
+    }
     
     wordInput.value = word;
     updateExternalLinks(word);
     translationInput.focus();
+
+    // Check spelling via Datamuse API (approximate spelling/sounds like)
+    try {
+        const response = await fetch(`https://api.datamuse.com/words?sp=${word}&max=1`);
+        const data = await response.json();
+        
+        // If the exact word isn't found or is slightly different, ask for suggestions
+        if (data.length === 0 || data[0].word !== word) {
+            const suggestRes = await fetch(`https://api.datamuse.com/words?sp=${word.slice(0,-1)}*&max=3`);
+            // Better yet, use 'sl' (sounds like) or 'sp' with wildcards
+            const correctionRes = await fetch(`https://api.datamuse.com/words?sl=${word}&max=3`);
+            const suggestions = await correctionRes.json();
+            
+            if (suggestions.length > 0) {
+                renderSuggestions(suggestions);
+            } else {
+                suggestionBox.classList.add('hidden');
+            }
+        } else {
+            suggestionBox.classList.add('hidden');
+        }
+    } catch (err) {
+        console.error('Spell check failed', err);
+    }
+}
+
+function renderSuggestions(suggestions) {
+    const box = document.getElementById('spell-suggestion-box');
+    const list = document.getElementById('suggestion-list');
+    
+    list.innerHTML = suggestions.map(s => `
+        <button onclick="applySuggestion('${s.word}')" class="px-3 py-1 bg-rose-50 text-rose-600 rounded-lg text-xs font-bold hover:bg-rose-600 hover:text-white transition-all border border-rose-100">
+            ${s.word}
+        </button>
+    `).join('');
+    
+    box.classList.remove('hidden');
+}
+
+function applySuggestion(word) {
+    const wordInput = document.getElementById('input-word');
+    wordInput.value = word;
+    document.getElementById('spell-suggestion-box').classList.add('hidden');
+    translateWord(); // Re-run to update links for the corrected word
 }
 
 function addWord() {
@@ -212,6 +261,7 @@ function addWord() {
     // Reset form and focus back to first field
     wordInput.value = '';
     translationInput.value = '';
+    document.getElementById('spell-suggestion-box').classList.add('hidden'); // Hide suggestions
     wordInput.focus();
     
     showNotification('单词已加入背诵计划！', 'check-circle');
