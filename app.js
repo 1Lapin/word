@@ -22,6 +22,7 @@ let selectedReviewMode = 'en-zh';
 let studyIndex = 0;
 let editingWordId = null;
 let isFreeStudyMode = false;
+let selectedChoiceIndex = -1; // 记录当前选中的选项索引
 
 // Initialize Lucide Icons
 lucide.createIcons();
@@ -454,6 +455,7 @@ function renderQuestion() {
     
     progress.innerText = `${currentReviewIndex + 1} / ${reviewQueue.length}`;
     feedbackContainer.classList.add('hidden');
+    selectedChoiceIndex = -1; // 重置选中项
     
     if (selectedReviewMode === 'en-zh') {
         modeTag.innerText = '看英文选中文';
@@ -491,8 +493,8 @@ function showChoices(word, type) {
     
     const allChoices = [...distractors, word].sort(() => Math.random() - 0.5);
     
-    choiceContainer.innerHTML = allChoices.map(c => `
-        <button onclick="checkAnswer('${c.id}')" class="w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-indigo-500 hover:bg-indigo-50 transition-all font-medium text-slate-700">
+    choiceContainer.innerHTML = allChoices.map((c, index) => `
+        <button onclick="checkAnswer('${c.id}')" data-index="${index}" class="choice-btn w-full p-4 text-left border-2 border-slate-100 rounded-2xl hover:border-indigo-500 hover:bg-indigo-50 transition-all font-medium text-slate-700">
             ${type === 'text' ? c.text : c.translation}
         </button>
     `).join('');
@@ -855,6 +857,19 @@ function renderDayView(container, date) {
 }
 
 // --- UI Helpers ---
+function updateChoiceHighlight() {
+    const buttons = document.querySelectorAll('.choice-btn');
+    buttons.forEach((btn, index) => {
+        if (index === selectedChoiceIndex) {
+            btn.classList.add('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-200');
+            btn.classList.remove('border-slate-100');
+        } else {
+            btn.classList.remove('border-indigo-500', 'bg-indigo-50', 'ring-2', 'ring-indigo-200');
+            btn.classList.add('border-slate-100');
+        }
+    });
+}
+
 function showNotification(msg, icon = 'info') {
     const notif = document.getElementById('notification');
     const msgEl = document.getElementById('notif-message');
@@ -909,14 +924,33 @@ window.onload = () => {
 
     // Global Review Keyboard Listener
     document.addEventListener('keydown', (e) => {
+        const feedbackContainer = document.getElementById('feedback-container');
+        const choiceContainer = document.getElementById('choice-container');
+        const spellingContainer = document.getElementById('spelling-container');
+        const isFeedbackVisible = feedbackContainer && !feedbackContainer.classList.contains('hidden');
+        const isChoicesVisible = choiceContainer && !choiceContainer.classList.contains('hidden');
+
         if (e.key === 'Enter') {
-            const feedbackContainer = document.getElementById('feedback-container');
-            const quizScreen = document.getElementById('quiz-screen');
-            
-            // Check if the feedback container is visible (works for both normal review and free study quiz)
-            if (feedbackContainer && !feedbackContainer.classList.contains('hidden')) {
+            if (isFeedbackVisible) {
                 e.preventDefault();
                 nextQuestion();
+            } else if (isChoicesVisible && selectedChoiceIndex !== -1) {
+                e.preventDefault();
+                const selectedBtn = document.querySelector(`.choice-btn[data-index="${selectedChoiceIndex}"]`);
+                if (selectedBtn) selectedBtn.click();
+            }
+        } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+            if (isChoicesVisible && !isFeedbackVisible) {
+                e.preventDefault();
+                const buttons = document.querySelectorAll('.choice-btn');
+                if (buttons.length === 0) return;
+
+                if (e.key === 'ArrowDown') {
+                    selectedChoiceIndex = (selectedChoiceIndex + 1) % buttons.length;
+                } else {
+                    selectedChoiceIndex = (selectedChoiceIndex - 1 + buttons.length) % buttons.length;
+                }
+                updateChoiceHighlight();
             }
         }
     });
