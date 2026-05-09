@@ -35,19 +35,41 @@ function handleLogin() {
         return;
     }
 
-    const userData = JSON.parse(localStorage.getItem(`user_${username}`)) || {
-        username: username,
-        displayName: username,
-        avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
-        words: []
-    };
+    // 1. 获取该用户现有的数据
+    let userData = JSON.parse(localStorage.getItem(`user_${username}`));
+    
+    // 2. 深度兼容性检查：如果用户不存在，创建一个
+    if (!userData) {
+        userData = {
+            username: username,
+            displayName: username,
+            avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${username}`,
+            words: []
+        };
+    }
+
+    // 3. 自动找回/迁移逻辑：
+    // A. 检查是否存在“最早期”无账号模式下的记录 (key 为 'words')
+    const legacyWords = JSON.parse(localStorage.getItem('words'));
+    if (legacyWords && Array.isArray(legacyWords) && legacyWords.length > 0) {
+        // 合并数据并去重
+        const existingIds = new Set(userData.words.map(w => w.id));
+        legacyWords.forEach(w => {
+            if (!existingIds.has(w.id)) {
+                userData.words.push(w);
+            }
+        });
+        // 迁移成功后清理旧数据，防止重复迁移
+        localStorage.removeItem('words');
+        console.log('已从旧版系统迁移数据');
+    }
 
     currentUser = userData;
     words = userData.words;
     
-    // Save current user to session
+    // 4. 保存并更新会话
     localStorage.setItem('current_user_session', username);
-    localStorage.setItem(`user_${username}`, JSON.stringify(currentUser));
+    saveUserData();
 
     updateProfileUI();
     document.getElementById('auth-screen').classList.add('hidden');
